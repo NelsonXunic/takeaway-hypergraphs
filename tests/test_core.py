@@ -175,7 +175,7 @@ def test_hypergraph_hashing():
     hg3.add_edge({"c", "d"})
 
     assert hash(hg1) != hash(hg3), "Different hypergraphs should have different hashes"
-    assert hg3 not in hg_dict, "Different hypergraphs " "should not be found in dict"
+    assert hg3 not in hg_dict, "Different hypergraphs should not be found in dict"
 
     # Test hashing with faces
     hg4 = Hypergraph()
@@ -190,7 +190,6 @@ def test_hypergraph_hashing():
     hg5.add_vertex("y")
     hg5.add_face({"z", "x", "y"})
 
-    assert hash(hg4) == hash(hg5), (
-        "Identical hypergraphs with faces "
-        "should hash equally regardless of add order"
-    )
+    assert hash(hg4) == hash(
+        hg5
+    ), "Identical hypergraphs with faces should hash equally regardless of add order"

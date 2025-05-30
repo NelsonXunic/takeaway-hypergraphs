@@ -56,7 +56,8 @@ class Hypergraph:
             f"faces={sorted([tuple(sorted(list(f))) for f in self.faces])})"
         )
 
-    # Override equality method for proper comparison; we check for equality between two Hypergraph instances
+    # Override equality method for proper comparison;
+    # we check for equality between two Hypergraph instances
     def __eq__(self, other):
         if not isinstance(other, Hypergraph):
             return NotImplemented
@@ -66,15 +67,18 @@ class Hypergraph:
             and self.faces == other.faces
         )
 
-    # Two Hypergraph objects will have the same hash if their structure (vertices, edges, faces)
-    # is identical, regardless of the internal order of elements in the Python sets, making them suitable for
+    # Two Hypergraph objects will have the same hash
+    # # if their structure (vertices, edges, faces)
+    # is identical, regardless of the internal order
+    # of elements in the Python sets, making them suitable for
     # use as dictionary keys or set members
     def __hash__(self):
         # Create a canonical representation for hashing
         # qwe sort vertices for consistent order
         canonical_vertices = frozenset(sorted(list(self.vertices)))
-        # then, sort frozenset edges (each frozenset is already hashable)
-        # The key ensures consistent ordering of frozensets in the outer frozenset
+        # sort frozenset edges (each frozenset is already hashable)
+        # The key ensures consistent ordering
+        # of frozensets in the outer frozenset
         canonical_edges = frozenset(
             sorted(list(self.edges), key=lambda x: tuple(sorted(x)))
         )
