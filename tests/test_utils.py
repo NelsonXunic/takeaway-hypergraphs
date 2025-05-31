@@ -206,3 +206,30 @@ def test_build_game_tree_two_isolated_vertices():
     assert child2["grundy_number"] == 1
     assert len(child2["children"]) == 1
     assert child2["children"][0]["state"] == str(Hypergraph())  # Grandchild is empty
+
+
+def test_build_game_tree_max_depth_truncation():
+    """Test that max_depth correctly truncates the tree."""
+    hg = Hypergraph()
+    hg.add_vertex("a")
+    hg.add_vertex("b")  # Grundy 0
+
+    # Max depth 0: Only the root node
+    tree_depth_0 = build_game_tree(hg, max_depth=0)
+    assert tree_depth_0["state"] == str(hg)
+    assert tree_depth_0["grundy_number"] == 0
+    assert tree_depth_0["children"] == []
+    assert tree_depth_0["truncated"] is True
+
+    # Max depth 1: Root node and its direct children
+    tree_depth_1 = build_game_tree(hg, max_depth=1)
+    assert tree_depth_1["state"] == str(hg)
+    assert tree_depth_1["grundy_number"] == 0
+    assert len(tree_depth_1["children"]) == 2
+    assert "truncated" not in tree_depth_1  # Root is not truncated
+
+    # Children should be truncated
+    for child in tree_depth_1["children"]:
+        assert len(child["children"]) == 0
+        assert child["truncated"] is True
+        assert child["grundy_number"] == 1  # Single vertex Grundy
