@@ -88,3 +88,19 @@ class Hypergraph:
         )
 
         return hash((canonical_vertices, canonical_edges, canonical_faces))
+
+    def copy(self) -> "Hypergraph":
+        """
+        Creates a deep copy of the hypergraph.
+        """
+        new_hg = Hypergraph()
+        # Add vertices explicitly
+        for vertex in self.vertices:
+            new_hg.add_vertex(vertex)
+        # Add edges (they will be frozensets, so they can be copied directly)
+        new_hg.edges = (
+            self.edges.copy()
+        )  # set.copy() creates a shallow copy of the set, but frozensets are immutable
+        # Add faces
+        new_hg.faces = self.faces.copy()
+        return new_hg
