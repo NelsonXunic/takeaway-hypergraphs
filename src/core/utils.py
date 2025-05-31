@@ -1,5 +1,5 @@
 from functools import lru_cache
-from hypergraph import Hypergraph
+from src.core.hypergraph import Hypergraph
 
 
 def calculate_mex(s: set[int]) -> int:
