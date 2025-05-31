@@ -159,3 +159,50 @@ def test_build_game_tree_empty_hypergraph():
     assert tree["children"] == []
     assert "truncated" not in tree
     assert "cycle_detected" not in tree
+
+
+def test_build_game_tree_single_isolated_vertex():
+    """Test building a game tree for a single isolated vertex."""
+    hg = Hypergraph()
+    hg.add_vertex("a")
+    tree = build_game_tree(hg)
+
+    assert tree["state"] == str(hg)
+    assert tree["grundy_number"] == 1
+    assert len(tree["children"]) == 1
+
+    child = tree["children"][0]
+    expected_child_hg = Hypergraph()  # Empty hypergraph
+    assert child["state"] == str(expected_child_hg)
+    assert child["grundy_number"] == 0
+    assert child["children"] == []
+
+
+def test_build_game_tree_two_isolated_vertices():
+    """Test building a game tree for two isolated vertices."""
+    hg = Hypergraph()
+    hg.add_vertex("a")
+    hg.add_vertex("b")
+    tree = build_game_tree(hg)
+
+    assert tree["state"] == str(hg)
+    assert tree["grundy_number"] == 0
+    assert len(tree["children"]) == 2
+
+    # Child 1: Remove 'a' -> {'b'}
+    child1 = tree["children"][0]
+    expected_child1_hg = Hypergraph()
+    expected_child1_hg.add_vertex("b")
+    assert child1["state"] == str(expected_child1_hg)
+    assert child1["grundy_number"] == 1
+    assert len(child1["children"]) == 1
+    assert child1["children"][0]["state"] == str(Hypergraph())  # Grandchild is empty
+
+    # Child 2: Remove 'b' -> {'a'}
+    child2 = tree["children"][1]
+    expected_child2_hg = Hypergraph()
+    expected_child2_hg.add_vertex("a")
+    assert child2["state"] == str(expected_child2_hg)
+    assert child2["grundy_number"] == 1
+    assert len(child2["children"]) == 1
+    assert child2["children"][0]["state"] == str(Hypergraph())  # Grandchild is empty
