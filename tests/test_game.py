@@ -63,3 +63,58 @@ def test_undo():
     game.undo()
     assert "a" in game.hypergraph.vertices
     assert game.current_player == "Player 1"
+
+
+def test_game_grundy_empty_hypergraph():
+    """Test Grundy number and win/loss for an empty hypergraph."""
+    hg = Hypergraph()
+    game = TakeAwayGame(hg)
+    assert game.get_current_grundy_number() == 0
+    assert game.is_losing_position() is True
+    assert game.is_winning_position() is False
+
+
+def test_game_grundy_single_isolated_vertex():
+    """Test Grundy number and win/loss for a single isolated vertex."""
+    hg = Hypergraph()
+    hg.add_vertex("a")
+    game = TakeAwayGame(hg)
+    assert game.get_current_grundy_number() == 1
+    assert game.is_losing_position() is False
+    assert game.is_winning_position() is True
+
+
+def test_game_grundy_two_isolated_vertices():
+    """Test Grundy number and win/loss for two isolated vertices."""
+    hg = Hypergraph()
+    hg.add_vertex("a")
+    hg.add_vertex("b")
+    game = TakeAwayGame(hg)
+    assert game.get_current_grundy_number() == 0
+    assert game.is_losing_position() is True
+    assert game.is_winning_position() is False
+
+
+def test_game_grundy_hypergraph_with_one_edge():
+    """Test Grundy number and win/loss for a hypergraph with one edge."""
+    hg = Hypergraph()
+    hg.add_vertex("a")
+    hg.add_vertex("b")
+    hg.add_edge({"a", "b"})
+    game = TakeAwayGame(hg)
+    assert game.get_current_grundy_number() == 0
+    assert game.is_losing_position() is True
+    assert game.is_winning_position() is False
+
+
+def test_game_grundy_hypergraph_with_one_face():
+    """Test Grundy number and win/loss for a hypergraph with one face."""
+    hg = Hypergraph()
+    hg.add_vertex("a")
+    hg.add_vertex("b")
+    hg.add_vertex("c")
+    hg.add_face({"a", "b", "c"})
+    game = TakeAwayGame(hg)
+    assert game.get_current_grundy_number() == 1
+    assert game.is_losing_position() is False
+    assert game.is_winning_position() is True
