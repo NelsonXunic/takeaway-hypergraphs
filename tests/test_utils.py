@@ -1,7 +1,9 @@
+import pytest
 from src.core.utils import (
     calculate_mex,
     calculate_grundy,
     build_game_tree,
+    print_game_tree,
 )
 from src.core.hypergraph import Hypergraph
 
@@ -189,23 +191,37 @@ def test_build_game_tree_two_isolated_vertices():
     assert tree["grundy_number"] == 0
     assert len(tree["children"]) == 2
 
-    # Child 1: Remove 'a' -> {'b'}
-    child1 = tree["children"][0]
-    expected_child1_hg = Hypergraph()
-    expected_child1_hg.add_vertex("b")
-    assert child1["state"] == str(expected_child1_hg)
-    assert child1["grundy_number"] == 1
-    assert len(child1["children"]) == 1
-    assert child1["children"][0]["state"] == str(Hypergraph())  # Grandchild is empty
+    # Define expected child states
+    expected_child_hg_a = Hypergraph()  # Hypergraph with only 'a'
+    expected_child_hg_a.add_vertex("a")
 
-    # Child 2: Remove 'b' -> {'a'}
-    child2 = tree["children"][1]
-    expected_child2_hg = Hypergraph()
-    expected_child2_hg.add_vertex("a")
-    assert child2["state"] == str(expected_child2_hg)
-    assert child2["grundy_number"] == 1
-    assert len(child2["children"]) == 1
-    assert child2["children"][0]["state"] == str(Hypergraph())  # Grandchild is empty
+    expected_child_hg_b = Hypergraph()  # Hypergraph with only 'b'
+    expected_child_hg_b.add_vertex("b")
+
+    expected_child_states = {str(expected_child_hg_a), str(expected_child_hg_b)}
+
+    # Extract actual child states
+    actual_child_states = {child["state"] for child in tree["children"]}
+
+    # Assert that the set of actual states matches the set of expected states
+    assert actual_child_states == expected_child_states
+
+    # Now, verify properties of each child by searching for its state
+    for child in tree["children"]:
+        if child["state"] == str(expected_child_hg_a):
+            assert child["grundy_number"] == 1
+            assert len(child["children"]) == 1
+            assert child["children"][0]["state"] == str(
+                Hypergraph()
+            )  # Grandchild should be empty
+        elif child["state"] == str(expected_child_hg_b):
+            assert child["grundy_number"] == 1
+            assert len(child["children"]) == 1
+            assert child["children"][0]["state"] == str(
+                Hypergraph()
+            )  # Grandchild should be empty
+        else:
+            pytest.fail(f"Unexpected child state found: {child['state']}")
 
 
 def test_build_game_tree_max_depth_truncation():
@@ -233,3 +249,20 @@ def test_build_game_tree_max_depth_truncation():
         assert len(child["children"]) == 0
         assert child["truncated"] is True
         assert child["grundy_number"] == 1  # Single vertex Grundy
+
+
+# Test print_game_tree (manual verification, but a simple test can ensure it runs)
+def test_print_game_tree_runs_without_error(capsys):
+    """Test that print_game_tree executes without errors and produces some output."""
+    hg = Hypergraph()
+    hg.add_vertex("x")
+    hg.add_vertex("y")
+    tree = build_game_tree(hg)
+
+    print_game_tree(tree)
+    captured = capsys.readouterr()  # Capture stdout/stderr
+    assert "State: V" in captured.out
+    assert "Grundy: 0 (P-position)" in captured.out
+    assert "Grundy: 1 (N-position)" in captured.out
+    assert "TRUNCATED" not in captured.out  # Should not be truncated
+    assert "CYCLE DETECTED" not in captured.out  # Should not have cycles
