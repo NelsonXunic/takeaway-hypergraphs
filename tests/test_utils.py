@@ -1,4 +1,8 @@
-from src.core.utils import calculate_mex, calculate_grundy
+from src.core.utils import (
+    calculate_mex,
+    calculate_grundy,
+    build_game_tree,
+)
 from src.core.hypergraph import Hypergraph
 
 
@@ -144,3 +148,14 @@ def test_grundy_memoization():
 
     # Expect more hits due to repeated calls on identical states (like empty graphs, single-vertex graphs)
     assert calculate_grundy.cache_info().hits > 0
+
+
+def test_build_game_tree_empty_hypergraph():
+    """Test building a game tree for an empty hypergraph (base case)."""
+    hg = Hypergraph()
+    tree = build_game_tree(hg)
+    assert tree["state"] == str(hg)
+    assert tree["grundy_number"] == 0
+    assert tree["children"] == []
+    assert "truncated" not in tree
+    assert "cycle_detected" not in tree

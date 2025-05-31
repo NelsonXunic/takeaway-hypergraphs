@@ -69,3 +69,115 @@ def calculate_grundy(hypergraph: Hypergraph) -> int:
 
     # Calculate the MEX of the reachable Grundy numbers
     return calculate_mex(reachable_grundy_numbers)
+
+
+def build_game_tree(
+    hypergraph: Hypergraph,
+    max_depth: int = -1,
+    current_depth: int = 0,
+    _visited_states: set = None,
+) -> dict:
+    """
+    Recursively constructs a dictionary representation of the game tree,
+    including Grundy numbers for each state.
+
+    Args:
+        hypergraph: The current hypergraph state.
+        max_depth: Maximum depth to build the tree (-1 for no limit).
+        current_depth: Current recursion depth (for internal use).
+        _visited_states: Set of visited hypergraph hashes to detect cycles
+                         within the current path (for internal use, pass a copy!).
+
+    Returns:
+        A dictionary representing the current node in the game tree.
+    """
+    if _visited_states is None:
+        _visited_states = set()
+
+    # Create a unique, hashable representation of the current state
+    current_hg_hash = hash(hypergraph)
+
+    # 1. Depth Limit
+    if max_depth != -1 and current_depth >= max_depth:
+        return {
+            "state": str(hypergraph),
+            "grundy_number": calculate_grundy(
+                hypergraph
+            ),  # Still calculate Grundy even if truncated
+            "children": [],
+            "truncated": True,
+        }
+
+    # 2. Cycle Detection (prevents infinite recursion for cyclic games, and redundant branches)
+    if current_hg_hash in _visited_states:
+        return {
+            "state": str(hypergraph),
+            "grundy_number": calculate_grundy(
+                hypergraph
+            ),  # Get Grundy for the cycle state
+            "children": [],
+            "cycle_detected": True,
+        }
+
+    # Add current state to visited set for this path
+    _visited_states.add(current_hg_hash)
+
+    # 3. Base Case (Game End)
+    if not hypergraph.vertices:  # If the hypergraph is empty
+        return {"state": str(hypergraph), "grundy_number": 0, "children": []}
+
+    # 4. Recursive Step (Normal State)
+    grundy_number = calculate_grundy(hypergraph)
+    children_nodes = []
+
+    for vertex_to_remove in hypergraph.vertices:
+        next_hypergraph = hypergraph.copy()
+        next_hypergraph.remove_vertex(vertex_to_remove)
+
+        # Pass a COPY of _visited_states to recursive calls for independent branches
+        child_node = build_game_tree(
+            next_hypergraph,
+            max_depth=max_depth,
+            current_depth=current_depth + 1,
+            _visited_states=_visited_states.copy(),
+        )
+        children_nodes.append(child_node)
+
+    # We could remove current state from visited set for path-independent checks
+    # This is optional, but good practice for other types of tree traversal
+    # _visited_states.remove(current_hg_hash) # Not needed here as we passed a copy
+
+    return {
+        "state": str(hypergraph),
+        "grundy_number": grundy_number,
+        "children": children_nodes,
+    }
+
+
+def print_game_tree(node: dict, indent: int = 0):
+    """
+    Prints a dictionary representation of a game tree to the console
+    in a structured, indented format.
+
+    Args:
+        node: The dictionary representing the current node in the game tree.
+        indent: The current indentation level.
+    """
+    prefix = "    " * indent
+    state_str = node["state"]
+    grundy_num = node["grundy_number"]
+
+    status = ""
+    if node.get("truncated"):
+        status = " (TRUNCATED)"
+    elif node.get("cycle_detected"):
+        status = " (CYCLE DETECTED)"
+    elif grundy_num == 0:
+        status = " (P-position)"
+    else:
+        status = " (N-position)"
+
+    print(f"{prefix}State: {state_str}, Grundy: {grundy_num}{status}")
+
+    for child in node.get("children", []):
+        print_game_tree(child, indent + 1)
