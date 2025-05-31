@@ -1,4 +1,5 @@
-from src.core.utils import calculate_mex
+from src.core.utils import calculate_mex, calculate_grundy
+from src.core.hypergraph import Hypergraph
 
 
 def test_mex_empty_set():
@@ -39,3 +40,107 @@ def test_mex_single_number():
     """Test MEX with a single non-zero number."""
     assert calculate_mex({5}) == 0
     assert calculate_mex({0}) == 1
+
+
+def test_grundy_empty_hypergraph():
+    """Test Grundy number for an empty hypergraph (base case)."""
+    hg = Hypergraph()
+    assert calculate_grundy(hg) == 0
+
+
+def test_grundy_single_isolated_vertex():
+    """Test Grundy for a single isolated vertex."""
+    hg = Hypergraph()
+    hg.add_vertex("a")
+    # Possible moves: remove "a" -> results in empty hypergraph (Grundy 0)
+    # Reachable Grundy numbers: {0}
+    # MEX({0}) = 1
+    assert calculate_grundy(hg) == 1
+
+
+def test_grundy_two_isolated_vertices():
+    """Test Grundy for two isolated vertices."""
+    hg = Hypergraph()
+    hg.add_vertex("a")
+    hg.add_vertex("b")
+    # Possible moves:
+    # 1. Remove "a" -> hypergraph with only "b" (Grundy 1)
+    # 2. Remove "b" -> hypergraph with only "a" (Grundy 1)
+    # Reachable Grundy numbers: {1}
+    # MEX({1}) = 0
+    assert calculate_grundy(hg) == 0
+
+
+def test_grundy_hypergraph_with_one_edge():
+    """Test Grundy for a hypergraph with two vertices and one edge."""
+    hg = Hypergraph()
+    hg.add_vertex("a")
+    hg.add_vertex("b")
+    hg.add_edge({"a", "b"})
+    # Possible moves:
+    # 1. Remove "a" -> hypergraph with "b", no edges (Grundy for {"b"} is 1)
+    # 2. Remove "b" -> hypergraph with "a", no edges (Grundy for {"a"} is 1)
+    # Reachable Grundy numbers: {1}
+    # MEX({1}) = 0
+    assert calculate_grundy(hg) == 0
+
+
+def test_grundy_hypergraph_with_one_face():
+    """Test Grundy for a hypergraph with three vertices and one face."""
+    hg = Hypergraph()
+    hg.add_vertex("a")
+    hg.add_vertex("b")
+    hg.add_vertex("c")
+    hg.add_face({"a", "b", "c"})
+    # Possible moves:
+    # 1. Remove "a" -> hypergraph with {"b", "c"}, no faces (Grundy for {"b", "c"} is 0)
+    # 2. Remove "b" -> hypergraph with {"a", "c"}, no faces (Grundy for {"a", "c"} is 0)
+    # 3. Remove "c" -> hypergraph with {"a", "b"}, no faces (Grundy for {"a", "b"} is 0)
+    # Reachable Grundy numbers: {0}
+    # MEX({0}) = 1
+    assert calculate_grundy(hg) == 1
+
+
+def test_grundy_memoization():
+    """Test that memoization is working by clearing cache and re-running."""
+    # This test relies on internal implementation detail (lru_cache.cache_info())
+    # but is useful for verifying memoization.
+    from src.core.utils import calculate_grundy  # Re-import to access cache_info
+
+    # Clear the cache before running this specific test
+    calculate_grundy.cache_clear()
+    assert calculate_grundy.cache_info().hits == 0
+    assert calculate_grundy.cache_info().misses == 0
+
+    hg1 = Hypergraph()
+    hg1.add_vertex("a")
+    hg1.add_vertex("b")
+
+    hg2 = Hypergraph()
+    hg2.add_vertex("b")
+    hg2.add_vertex(
+        "a"
+    )  # Same structure, different order, should hit cache on second call
+
+    grundy_val_1 = calculate_grundy(hg1)
+    assert (
+        calculate_grundy.cache_info().misses == 4
+    )  # Initial hg1, and its two successors ({"a"}, {"b"})
+
+    grundy_val_2 = calculate_grundy(hg2)
+    # hg2 is identical to hg1 (due to __eq__ and __hash__), so it should be a cache hit.
+    # Its children ({"a"}, {"b"}) should also be cache hits.
+    assert calculate_grundy.cache_info().hits == 2  # hg2 itself, plus its children
+
+    assert (
+        grundy_val_1 == grundy_val_2 == 0
+    )  # Based on previous test_grundy_two_isolated_vertices
+
+    # Verify that Grundy for an empty graph is also cached
+    empty_hg = Hypergraph()
+    calculate_grundy(
+        empty_hg
+    )  # This will be a cache hit if it was encountered during other runs
+
+    # Expect more hits due to repeated calls on identical states (like empty graphs, single-vertex graphs)
+    assert calculate_grundy.cache_info().hits > 0
