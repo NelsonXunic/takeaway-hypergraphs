@@ -1,5 +1,6 @@
 import copy
 from .hypergraph import Hypergraph
+from .utils import calculate_grundy
 
 
 class TakeAwayGame:
@@ -21,7 +22,7 @@ class TakeAwayGame:
     # Switches player
     def move_vertex(self, vertex):
         if vertex not in self.hypergraph.vertices:
-            raise ValueError(f"Vertex {vertex} not found in hypergraph")
+            raise ValueError(f"Vertex {vertex} not found in hypergraph")  # noqa: E713
 
         self.history.append(copy.deepcopy(self.hypergraph))
         self.hypergraph.remove_vertex(vertex)
@@ -53,6 +54,26 @@ class TakeAwayGame:
 
     def __repr__(self):
         return f"Current player: {self.current_player}\n{self.hypergraph}"
+
+    def get_current_grundy_number(self) -> int:
+        """
+        Calculates the Grundy number of the current hypergraph state.
+        """
+        return calculate_grundy(self.hypergraph)
+
+    def is_losing_position(self) -> bool:
+        """
+        Checks if the current hypergraph state is a P-position (losing position for the current player).
+        A P-position has a Grundy number of 0.
+        """
+        return self.get_current_grundy_number() == 0
+
+    def is_winning_position(self) -> bool:
+        """
+        Checks if the current hypergraph state is an N-position (winning position for the current player).
+        An N-position has a Grundy number greater than 0.
+        """
+        return self.get_current_grundy_number() > 0
 
 
 if __name__ == "__main__":
