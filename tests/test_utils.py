@@ -266,3 +266,59 @@ def test_print_game_tree_runs_without_error(capsys):
     assert "Grundy: 1 (N-position)" in captured.out
     assert "TRUNCATED" not in captured.out  # Should not be truncated
     assert "CYCLE DETECTED" not in captured.out  # Should not have cycles
+
+
+def test_calculate_grundy_disconnected_two_isolated_vertices():
+    """
+    Test Grundy calculation for a hypergraph with two disconnected,
+    single-vertex components. G(a) ^ G(b) = 1 ^ 1 = 0.
+    """
+    hg = Hypergraph()
+    hg.add_vertex("a")
+    hg.add_vertex("b")
+    assert calculate_grundy(hg) == 0
+
+
+def test_calculate_grundy_disconnected_isolated_vertex_and_edge():
+    """
+    Test Grundy for a hypergraph with an isolated vertex and an edge component.
+    G({a,b} with edge) = 0 (as removing 'a' leaves {'b'}, G=1; removing 'b' leaves {'a'}, G=1; MEX({1})=0)
+    G({c}) = 1
+    So, G(...) = 0 ^ 1 = 1.
+    """
+    hg = Hypergraph()
+    hg.add_vertex("a")
+    hg.add_vertex("b")
+    hg.add_edge({"a", "b"})  # This component has Grundy 0
+    hg.add_vertex("c")  # This component has Grundy 1
+
+    assert calculate_grundy(hg) == 1
+
+
+def test_calculate_grundy_disconnected_complex_example():
+    """
+    Test Grundy for a more complex disconnected hypergraph.
+    Component 1: {'a', 'b'} with edge, G=0
+    Component 2: {'x', 'y', 'z'} with face, G from earlier tests for
+    similar structure, let's assume it's non-trivial.
+                 For {'x','y','z'} with face:
+                 Remove 'x' -> {'y','z'} no face. G=0 (isolated y,z)
+                 Remove 'y' -> {'x','z'} no face. G=0
+                 Remove 'z' -> {'x','y'} no face. G=0
+                 MEX({0}) = 1. So G({'x','y','z'} with face) = 1.
+    Component 3: {'p'} isolated, G=1
+    Total Grundy = G(comp1) ^ G(comp2) ^ G(comp3) = 0 ^ 1 ^ 1 = 0.
+    """
+    hg = Hypergraph()
+    hg.add_vertex("a")
+    hg.add_vertex("b")
+    hg.add_edge({"a", "b"})  # Component 1: G=0
+
+    hg.add_vertex("x")
+    hg.add_vertex("y")
+    hg.add_vertex("z")
+    hg.add_face({"x", "y", "z"})  # Component 2: G=1
+
+    hg.add_vertex("p")  # Component 3: G=1
+
+    assert calculate_grundy(hg) == 0

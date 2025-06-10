@@ -46,7 +46,12 @@ class TakeAwayGame:
 
     # Returns True if no vertices remain.
     def is_game_over(self):
-        return self.hypergraph.is_empty()
+        """
+        Checks if the game is over. In the Take Away game, the game is over
+        when there are no vertices left in the hypergraph, so no more moves
+        can be made
+        """
+        return not self.hypergraph.vertices
 
     # Switches the active player between "Player 1" and "Player 2"
     def _next_player(self):

@@ -1,3 +1,4 @@
+import functools  # noqa: F401
 from functools import lru_cache
 from src.core.hypergraph import Hypergraph
 
@@ -47,11 +48,23 @@ def calculate_grundy(hypergraph: Hypergraph) -> int:
     if not hypergraph.vertices:  # Assuming no vertices means no possible moves
         return 0
 
+    # Optimization for disconnected hypergraphs. The Nim-sum property states that
+    # the Grundy number of a disconnected hypergraph is the XOR of the Grundy numbers
+    # of its connected components
+    components = hypergraph.get_components()
+    if len(components) > 1:
+        nim_sum = 0
+        for component_hg in components:
+            nim_sum ^= calculate_grundy(
+                component_hg
+            )  # Recursively calculate for each component
+        return nim_sum
+    # we leave the logic for a single connected component mainly if get_components returns just one
     # Collect Grundy numbers of all reachable next states
     reachable_grundy_numbers = set()
 
-    # --- Consider all possible moves from the current hypergraph state ---
-    # For Takeaway-Hypergraphs, moves involve removing a vertex.
+    # Consider all possible moves from the current hypergraph state
+    # For Takeaway-Hypergraphs, moves involve removing a vertex
     # When a vertex is removed, any edges or faces containing it are also removed.
 
     # Simulate removing each vertex one by one
