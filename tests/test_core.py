@@ -1,3 +1,4 @@
+import pytest  # noqa: F401
 from core.hypergraph import Hypergraph
 
 
@@ -193,3 +194,126 @@ def test_hypergraph_hashing():
     assert hash(hg4) == hash(
         hg5
     ), "Identical hypergraphs with faces should hash equally regardless of add order"
+
+
+def test_hypergraph_get_components_empty():
+    """Test get_components for an empty hypergraph."""
+    hg = Hypergraph()
+    components = hg.get_components()
+    assert components == []
+
+
+def test_hypergraph_get_components_single_vertex():
+    """Test get_components for a single isolated vertex."""
+    hg = Hypergraph()
+    hg.add_vertex("a")
+    components = hg.get_components()
+    assert len(components) == 1
+    assert components[0] == hg  # Should return itself as the only component
+
+
+def test_hypergraph_get_components_isolated_vertices():
+    """Test get_components for multiple isolated vertices."""
+    hg = Hypergraph()
+    hg.add_vertex("a")
+    hg.add_vertex("b")
+    hg.add_vertex("c")
+    components = hg.get_components()
+    assert len(components) == 3
+    # Check that each component is a single-vertex hypergraph
+    expected_a = Hypergraph()
+    expected_a.add_vertex("a")
+    assert expected_a in components
+    expected_b = Hypergraph()
+    expected_b.add_vertex("b")
+    assert expected_b in components
+    expected_c = Hypergraph()
+    expected_c.add_vertex("c")
+    assert expected_c in components
+
+
+def test_hypergraph_get_components_connected_by_edge():
+    """Test get_components for vertices connected by an edge."""
+    hg = Hypergraph()
+    hg.add_vertex("a")
+    hg.add_vertex("b")
+    hg.add_vertex("c")
+    hg.add_edge({"a", "b"})
+    components = hg.get_components()
+    assert len(components) == 2
+    # Component 1: {"a", "b"} with edge
+    expected_comp1 = Hypergraph()
+    expected_comp1.add_vertex("a")
+    expected_comp1.add_vertex("b")
+    expected_comp1.add_edge({"a", "b"})
+    # Component 2: {"c"} isolated
+    expected_comp2 = Hypergraph()
+    expected_comp2.add_vertex("c")
+
+    assert expected_comp1 in components
+    assert expected_comp2 in components
+
+
+def test_hypergraph_get_components_connected_by_face():
+    """Test get_components for vertices connected by a face."""
+    hg = Hypergraph()
+    hg.add_vertex("x")
+    hg.add_vertex("y")
+    hg.add_vertex("z")
+    hg.add_vertex("w")
+    hg.add_face({"x", "y", "z"})
+    components = hg.get_components()
+    assert len(components) == 2
+    # Component 1: {"x", "y", "z"} with face
+    expected_comp1 = Hypergraph()
+    expected_comp1.add_vertex("x")
+    expected_comp1.add_vertex("y")
+    expected_comp1.add_vertex("z")
+    expected_comp1.add_face({"x", "y", "z"})
+    # Component 2: {"w"} isolated
+    expected_comp2 = Hypergraph()
+    expected_comp2.add_vertex("w")
+
+    assert expected_comp1 in components
+    assert expected_comp2 in components
+
+
+def test_hypergraph_get_components_complex_disconnected():
+    """Test get_components for a more complex disconnected hypergraph."""
+    hg = Hypergraph()
+    hg.add_vertex("a")
+    hg.add_vertex("b")
+    hg.add_edge({"a", "b"})
+
+    hg.add_vertex("x")
+    hg.add_vertex("y")
+    hg.add_vertex("z")
+    hg.add_face({"x", "y", "z"})
+
+    hg.add_vertex("p")  # isolated
+
+    components = hg.get_components()
+    assert len(components) == 3
+
+    expected_comp1 = Hypergraph()
+    expected_comp1.add_vertex("a")
+    expected_comp1.add_vertex("b")
+    expected_comp1.add_edge({"a", "b"})
+
+    expected_comp2 = Hypergraph()
+    expected_comp2.add_vertex("x")
+    expected_comp2.add_vertex("y")
+    expected_comp2.add_vertex("z")
+    expected_comp2.add_face({"x", "y", "z"})
+
+    expected_comp3 = Hypergraph()
+    expected_comp3.add_vertex("p")
+
+    actual_components_set = {str(c) for c in components}  # Use str for set comparison
+    expected_components_set = {
+        str(expected_comp1),
+        str(expected_comp2),
+        str(expected_comp3),
+    }
+
+    assert actual_components_set == expected_components_set

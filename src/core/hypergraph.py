@@ -1,3 +1,6 @@
+import collections
+
+
 class Hypergraph:
     def __init__(self):
         self.vertices = set()
@@ -104,3 +107,69 @@ class Hypergraph:
         # Add faces
         new_hg.faces = self.faces.copy()
         return new_hg
+
+    def get_components(self) -> list["Hypergraph"]:
+        """
+        Identifies and returns a list of independent (disconnected) sub-hypergraphs.
+        Uses a graph traversal (BFS) to find connected components based on shared edges/faces.
+        """
+        components = []
+        visited_vertices = set()
+
+        # Build an adjacency list for connected vertices within the hypergraph.
+        # Vertices are connected if they share an edge or a face.
+        adj_list = collections.defaultdict(set)
+
+        # Add connections from edges
+        for edge in self.edges:
+            # All vertices in an edge are connected to each other
+            vertices_in_edge = list(edge)
+            for i in range(len(vertices_in_edge)):
+                for j in range(i + 1, len(vertices_in_edge)):
+                    u, v = vertices_in_edge[i], vertices_in_edge[j]
+                    adj_list[u].add(v)
+                    adj_list[v].add(u)
+
+        # Add connections from faces
+        for face in self.faces:
+            # All vertices in a face are connected to each other
+            vertices_in_face = list(face)
+            for i in range(len(vertices_in_face)):
+                for j in range(i + 1, len(vertices_in_face)):
+                    u, v = vertices_in_face[i], vertices_in_face[j]
+                    adj_list[u].add(v)
+                    adj_list[v].add(u)
+
+        # Perform BFS to find connected components
+        for start_vertex in self.vertices:
+            if start_vertex not in visited_vertices:
+                current_component_vertices = set()
+                queue = collections.deque([start_vertex])
+                visited_vertices.add(start_vertex)
+                current_component_vertices.add(start_vertex)
+
+                while queue:
+                    v = queue.popleft()
+                    for neighbor in adj_list[v]:
+                        if neighbor not in visited_vertices:
+                            visited_vertices.add(neighbor)
+                            current_component_vertices.add(neighbor)
+                            queue.append(neighbor)
+
+                # Create a new Hypergraph for this component
+                component_hg = Hypergraph()
+                for v in current_component_vertices:
+                    component_hg.add_vertex(v)
+
+                # Add edges and faces that are entirely within this component
+                for edge in self.edges:
+                    if edge.issubset(current_component_vertices):
+                        component_hg.add_edge(edge)
+
+                for face in self.faces:
+                    if face.issubset(current_component_vertices):
+                        component_hg.add_face(face)
+
+                components.append(component_hg)
+
+        return components
